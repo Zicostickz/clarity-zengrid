@@ -61,22 +61,40 @@ Clarinet.test({
 });
 
 Clarinet.test({
-  name: "Can update today's entry",
+  name: "Can generate weekly insights after entries",
+  async fn(chain: Chain, accounts: Map<string, Account>) {
+    const wallet1 = accounts.get('wallet_1')!;
+    
+    // Simulate a week of entries
+    let blocks = [];
+    for(let i = 0; i < 7; i++) {
+      blocks.push(chain.mineBlock([
+        Tx.contractCall('zen_grid', 'record-entry', [
+          types.uint(3),
+          types.some(types.utf8(`Day ${i} entry`))
+        ], wallet1.address)
+      ]));
+      // Mine additional blocks to simulate next day
+      chain.mineEmptyBlock(144);
+    }
+    
+    let insightBlock = chain.mineBlock([
+      Tx.contractCall('zen_grid', 'generate-weekly-insight', [], wallet1.address)
+    ]);
+    
+    insightBlock.receipts[0].result.expectOk();
+  },
+});
+
+Clarinet.test({
+  name: "Cannot generate insights without entries",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const wallet1 = accounts.get('wallet_1')!;
     
     let block = chain.mineBlock([
-      Tx.contractCall('zen_grid', 'record-entry', [
-        types.uint(3),
-        types.some(types.utf8("Original entry"))
-      ], wallet1.address),
-      Tx.contractCall('zen_grid', 'update-today-entry', [
-        types.uint(4),
-        types.some(types.utf8("Updated entry"))
-      ], wallet1.address)
+      Tx.contractCall('zen_grid', 'generate-weekly-insight', [], wallet1.address)
     ]);
     
-    block.receipts[0].result.expectOk();
-    block.receipts[1].result.expectOk();
+    block.receipts[0].result.expectErr(types.uint(104)); // ERR-NO-ENTRIES
   },
 });

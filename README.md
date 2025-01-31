@@ -9,6 +9,8 @@ ZenGrid is a decentralized application for tracking mental health and emotional 
 - Historical view of emotional states
 - Optional notes for each entry
 - Complete data ownership and privacy
+- Weekly insights with trend analysis
+- Entry statistics and progress tracking
 
 ## Contract Functions
 
@@ -16,9 +18,20 @@ ZenGrid is a decentralized application for tracking mental health and emotional 
 - Retrieve historical entries
 - Update entries within same day
 - View aggregated statistics
+- Generate weekly insights
+- Track emotional trends
+
+## Weekly Insights
+
+The new weekly insights feature provides:
+- Average emotional score for the week
+- Trend analysis (improving/declining/stable)
+- Entry completion tracking
+- Week-over-week comparisons
 
 ## Getting Started
 
 1. Install the [Hiro Wallet](https://wallet.hiro.so/)
 2. Connect your wallet to ZenGrid
 3. Start tracking your emotional wellbeing
+4. Generate weekly insights to track your progress
