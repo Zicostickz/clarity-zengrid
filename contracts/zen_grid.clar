@@ -1,14 +1,26 @@
 ;; ZenGrid - Mental Health Tracking Contract
 
-;; Constants
+;; Constants 
 (define-constant ERR-NOT-AUTHORIZED (err u101))
 (define-constant ERR-INVALID-SCORE (err u102))
 (define-constant ERR-ALREADY-RECORDED-TODAY (err u103))
+(define-constant ERR-NO-ENTRIES (err u104))
+(define-constant ERR-INVALID-TIMEFRAME (err u105))
 
 ;; Data Variables
 (define-map daily-entries
     { user: principal, date: uint }
     { score: uint, note: (optional (string-utf8 280)) }
+)
+
+;; Data Variables for Weekly Insights
+(define-map weekly-insights
+    { user: principal, week: uint }
+    { 
+      avg-score: uint,
+      trend: (string-utf8 20),
+      entry-count: uint
+    }
 )
 
 ;; Private Functions
@@ -18,6 +30,20 @@
 
 (define-private (get-today)
     (/ block-height u144)  ;; Approximate days since genesis
+)
+
+(define-private (get-week)
+    (/ (get-today) u7)
+)
+
+(define-private (calculate-trend (current-avg uint) (prev-avg uint))
+    (if (> current-avg prev-avg)
+        "improving"
+        (if (< current-avg prev-avg)
+            "declining"
+            "stable"
+        )
+    )
 )
 
 ;; Public Functions
@@ -59,6 +85,30 @@
     )
 )
 
+(define-public (generate-weekly-insight)
+    (let
+        (
+            (current-week (get-week))
+            (start-day (* current-week u7))
+            (entries (fold get-week-entries (list u0 u1 u2 u3 u4 u5 u6) { count: u0, total: u0 }))
+            (avg-score (if (> (get count entries) u0)
+                        (/ (get total entries) (get count entries))
+                        u0))
+            (prev-insight (map-get? weekly-insights { user: tx-sender, week: (- current-week u1) }))
+            (prev-avg (default-to u0 (get avg-score prev-insight)))
+        )
+        (if (> (get count entries) u0)
+            (ok (map-set weekly-insights
+                { user: tx-sender, week: current-week }
+                {
+                    avg-score: avg-score,
+                    trend: (calculate-trend avg-score prev-avg),
+                    entry-count: (get count entries)
+                }))
+            ERR-NO-ENTRIES)
+    )
+)
+
 ;; Read Only Functions
 (define-read-only (get-entry (user principal) (date uint))
     (map-get? daily-entries { user: user, date: date })
@@ -66,4 +116,12 @@
 
 (define-read-only (get-today-entry (user principal))
     (get-entry user (get-today))
+)
+
+(define-read-only (get-weekly-insight (user principal) (week uint))
+    (map-get? weekly-insights { user: user, week: week })
+)
+
+(define-read-only (get-current-week-insight (user principal))
+    (get-weekly-insight user (get-week))
 )
