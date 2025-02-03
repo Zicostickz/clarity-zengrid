@@ -19,7 +19,8 @@
     { 
       avg-score: uint,
       trend: (string-utf8 20),
-      entry-count: uint
+      entry-count: uint,
+      streak: uint
     }
 )
 
@@ -43,6 +44,14 @@
             "declining"
             "stable"
         )
+    )
+)
+
+(define-private (calculate-streak (user principal) (current-week uint))
+    (let ((prev-insight (map-get? weekly-insights { user: user, week: (- current-week u1) })))
+        (if (is-some prev-insight)
+            (+ (get streak (unwrap-panic prev-insight)) u1)
+            u1)
     )
 )
 
@@ -96,6 +105,7 @@
                         u0))
             (prev-insight (map-get? weekly-insights { user: tx-sender, week: (- current-week u1) }))
             (prev-avg (default-to u0 (get avg-score prev-insight)))
+            (streak (calculate-streak tx-sender current-week))
         )
         (if (> (get count entries) u0)
             (ok (map-set weekly-insights
@@ -103,7 +113,8 @@
                 {
                     avg-score: avg-score,
                     trend: (calculate-trend avg-score prev-avg),
-                    entry-count: (get count entries)
+                    entry-count: (get count entries),
+                    streak: streak
                 }))
             ERR-NO-ENTRIES)
     )
