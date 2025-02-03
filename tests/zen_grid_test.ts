@@ -61,13 +61,13 @@ Clarinet.test({
 });
 
 Clarinet.test({
-  name: "Can generate weekly insights after entries",
+  name: "Can generate weekly insights with correct streak",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const wallet1 = accounts.get('wallet_1')!;
     
-    // Simulate a week of entries
+    // Simulate two weeks of entries
     let blocks = [];
-    for(let i = 0; i < 7; i++) {
+    for(let i = 0; i < 14; i++) {
       blocks.push(chain.mineBlock([
         Tx.contractCall('zen_grid', 'record-entry', [
           types.uint(3),
@@ -78,11 +78,26 @@ Clarinet.test({
       chain.mineEmptyBlock(144);
     }
     
-    let insightBlock = chain.mineBlock([
+    let week1Insight = chain.mineBlock([
       Tx.contractCall('zen_grid', 'generate-weekly-insight', [], wallet1.address)
     ]);
     
-    insightBlock.receipts[0].result.expectOk();
+    let week2Insight = chain.mineBlock([
+      Tx.contractCall('zen_grid', 'generate-weekly-insight', [], wallet1.address)
+    ]);
+    
+    week1Insight.receipts[0].result.expectOk();
+    week2Insight.receipts[0].result.expectOk();
+    
+    // Get the insight to verify streak
+    let result = chain.callReadOnlyFn(
+      'zen_grid',
+      'get-current-week-insight',
+      [types.principal(wallet1.address)],
+      wallet1.address
+    );
+    
+    assertEquals(result.result.expectSome().streak, types.uint(2));
   },
 });
 
