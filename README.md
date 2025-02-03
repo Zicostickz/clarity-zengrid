@@ -11,6 +11,7 @@ ZenGrid is a decentralized application for tracking mental health and emotional 
 - Complete data ownership and privacy
 - Weekly insights with trend analysis
 - Entry statistics and progress tracking
+- Continuous participation streak tracking
 
 ## Contract Functions
 
@@ -20,14 +21,16 @@ ZenGrid is a decentralized application for tracking mental health and emotional 
 - View aggregated statistics
 - Generate weekly insights
 - Track emotional trends
+- Monitor participation streaks
 
 ## Weekly Insights
 
-The new weekly insights feature provides:
+The weekly insights feature provides:
 - Average emotional score for the week
 - Trend analysis (improving/declining/stable)
 - Entry completion tracking
 - Week-over-week comparisons
+- Continuous participation streak count
 
 ## Getting Started
 
@@ -35,3 +38,4 @@ The new weekly insights feature provides:
 2. Connect your wallet to ZenGrid
 3. Start tracking your emotional wellbeing
 4. Generate weekly insights to track your progress
+5. Build your participation streak by recording entries consistently
