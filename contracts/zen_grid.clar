@@ -7,6 +7,8 @@
 (define-constant ERR-NO-ENTRIES (err u104))
 (define-constant ERR-INVALID-TIMEFRAME (err u105))
 (define-constant ERR-FUTURE-DATE (err u106))
+(define-constant ERR-NOTE-TOO-LONG (err u107))
+(define-constant MAX-NOTE-LENGTH u280)
 
 ;; Data Variables
 (define-map daily-entries
@@ -30,6 +32,13 @@
     (and (>= score u1) (<= score u5))
 )
 
+(define-private (is-valid-note (note (optional (string-utf8 280))))
+    (match note
+        some-note (< (len some-note) MAX-NOTE-LENGTH)
+        true
+    )
+)
+
 (define-private (get-today)
     (/ block-height u144)  ;; Approximate days since genesis
 )
@@ -42,40 +51,45 @@
     (<= date (get-today))
 )
 
-(define-private (get-week-entries (day-offset uint) (acc { count: uint, total: uint }))
+(define-private (iterate-week-days (current-day uint) (acc { count: uint, total: uint }))
     (let (
-        (current-week (get-week))
-        (target-day (+ (* current-week u7) day-offset))
-        (entry (get-entry tx-sender target-day))
+        (entry (get-entry tx-sender current-day))
     )
-    (if (is-some entry)
-        {
-            count: (+ (get count acc) u1),
-            total: (+ (get total acc) (get score (unwrap-panic entry)))
-        }
+    (if (>= current-day (+ current-day u7))
         acc
-    ))
-)
-
-(define-private (calculate-trend (current-avg uint) (prev-avg uint))
-    (if (> current-avg prev-avg)
-        "improving"
-        (if (< current-avg prev-avg)
-            "declining"
-            "stable"
+        (if (is-some entry)
+            (iterate-week-days 
+                (+ current-day u1)
+                {
+                    count: (+ (get count acc) u1),
+                    total: (+ (get total acc) (get score (unwrap-panic entry)))
+                }
+            )
+            (iterate-week-days (+ current-day u1) acc)
         )
-    )
+    ))
 )
 
 (define-private (calculate-streak (user principal) (current-week uint))
     (let (
         (prev-insight (map-get? weekly-insights { user: user, week: (- current-week u1) }))
-        (current-entries (get-week-entries u6 { count: u0, total: u0 }))
+        (week-start (* current-week u7))
+        (continuous-entries (verify-continuous-entries user week-start))
     )
-    (if (and (is-some prev-insight) (> (get count current-entries) u0))
+    (if (and (is-some prev-insight) continuous-entries)
         (+ (get streak (unwrap-panic prev-insight)) u1)
         u1)
     )
 )
 
-;; [Rest of the contract remains unchanged...]
+(define-private (verify-continuous-entries (user principal) (start-day uint))
+    (let (
+        (entries (fold iterate-week-days 
+            (list u0 u1 u2 u3 u4 u5 u6)
+            { count: u0, total: u0 }
+        ))
+    )
+    (= (get count entries) u7))
+)
+
+;; Public Functions remain unchanged...
